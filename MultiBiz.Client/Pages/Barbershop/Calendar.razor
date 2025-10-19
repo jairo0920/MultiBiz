@@ -1,0 +1,29 @@
+@page "/barbershop/calendar"
+@inject ApiClient Api
+@code {
+    IEnumerable<MultiBiz.Shared.Barbershop.AppointmentDto>? items;
+    protected override async Task OnInitializedAsync() => items = await Api.GetAppointments();
+}
+<div class="container-fluid">
+  <h5 class="mb-3">Citas (7 días)</h5>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Teléfono</th><th>Barbero</th><th>Servicio</th></tr></thead>
+        <tbody>
+          @if (items != null){
+            @foreach (var a in items){
+              <tr>
+                <td>@a.Start.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@a.CustomerName</td>
+                <td>@a.CustomerPhone</td>
+                <td>@a.BarberId</td>
+                <td>@a.ServiceId</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

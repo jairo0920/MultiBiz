@@ -1,0 +1,48 @@
+@page "/admin/tenants"
+@inject ApiClient Api
+
+@code {
+    PagedResult<TenantDto>? data;
+    int page = 1; int pageSize = 10;
+    string name=""; string sub=""; bool active=true;
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    async Task Load() => data = await Api.GetTenants(page, pageSize);
+    async Task Create()
+    {
+        await Api.CreateTenant(new CreateTenantRequest(name, sub, active));
+        name=sub=""; active=true;
+        await Load();
+    }
+}
+
+<div class="container-fluid">
+  <div class="d-flex align-items-center mb-3">
+    <h5 class="me-auto">Tenants</h5>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body row g-2">
+      <div class="col-md-4"><input class="form-control" placeholder="Nombre" @bind="name"/></div>
+      <div class="col-md-4"><input class="form-control" placeholder="Subdominio" @bind="sub"/></div>
+      <div class="col-md-2 form-check d-flex align-items-center">
+        <input class="form-check-input me-2" type="checkbox" @bind="active"/> Activo
+      </div>
+      <div class="col-md-2"><button class="btn btn-primary w-100" @onclick="Create">Agregar</button></div>
+    </div>
+  </div>
+
+  @if(data is not null){
+    <div class="table-responsive card">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Nombre</th><th>Subdominio</th><th>Activo</th></tr></thead>
+        <tbody>
+          @foreach (var t in data.Items){
+            <tr><td>@t.Name</td><td>@t.Subdomain</td><td>@(t.IsActive? "Sí":"No")</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

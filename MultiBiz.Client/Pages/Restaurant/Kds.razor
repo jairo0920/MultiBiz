@@ -1,0 +1,47 @@
+@page "/restaurant/kds"
+@inject ApiClient Api
+@inject KdsRealtime Realtime
+
+@implements IAsyncDisposable
+
+@code {
+    IEnumerable<MultiBiz.Shared.Restaurant.KdsOrderItem>? orders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        Realtime.OnChanged += async () => await Load();
+        await Realtime.StartAsync(); // pasa JWT si el hub requiere auth
+    }
+
+    private async Task Load() => orders = await Api.GetKds();
+
+    public async ValueTask DisposeAsync()
+    {
+        Realtime.OnChanged -= async () => await Load();
+        await Realtime.DisposeAsync();
+    }
+}
+
+<div class="container-fluid">
+  <h5 class="mb-3">KDS - Cocina (tiempo real, aislado por tenant)</h5>
+  <div class="row g-3">
+    @if (orders is not null){
+      @foreach (var o in orders){
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <strong>Mesa/Barra: @o.Table</strong>
+                <span class="badge bg-secondary">@o.Status</span>
+              </div>
+              <ul class="mt-2 mb-0">
+                @foreach (var line in o.Lines){ <li>@line.Qty x @line.Item</li> }
+              </ul>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

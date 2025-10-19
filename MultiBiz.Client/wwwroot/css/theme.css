@@ -1,0 +1,26 @@
+:root {
+  --brand:#2e6f9e;
+  --brand-2:#1f4c6b;
+}
+body { background:#f8fafc; }
+.navbar-brand { font-weight:700; color:#fff !important; }
+.sidebar {
+  width: 260px;
+  background: #0f172a;
+  color: #e2e8f0;
+  position: fixed;
+  top: 56px;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+  padding: .75rem;
+}
+.sidebar a { color:#cbd5e1; text-decoration:none; display:block; padding:.5rem .75rem; border-radius:.5rem;}
+.sidebar a.active, .sidebar a:hover { background:#1e293b; color:#fff; }
+.content { margin-left: 260px; margin-top:56px; padding:1rem; }
+@media (max-width: 991px) {
+  .sidebar { position: static; width: 100%; top:0; }
+  .content { margin-left:0; }
+}
+.ticket-80mm { width: 80mm; font-family: monospace; font-size: 12px;}
+.ticket-80mm .center { text-align:center; }

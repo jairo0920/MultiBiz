@@ -1,0 +1,24 @@
+@page "/admin/users"
+@inject ApiClient Api
+
+@code {
+    PagedResult<UserDto>? data;
+    int page = 1; int pageSize = 10;
+    protected override async Task OnInitializedAsync() => await Load();
+    async Task Load() => data = await Api.GetUsers(page, pageSize);
+}
+<div class="container-fluid">
+  <h5 class="mb-3">Usuarios</h5>
+  @if (data is not null) {
+    <div class="table-responsive card">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Activo</th></tr></thead>
+        <tbody>
+          @foreach (var u in data.Items){
+            <tr><td>@u.UserName</td><td>@u.FullName</td><td>@u.Email</td><td>@(u.IsActive? "Sí":"No")</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

@@ -1,0 +1,51 @@
+@page "/forgot"
+@inject ApiClient Api
+
+@code {
+    string userOrEmail = "";
+    string? msg;
+    string? err;
+    bool submitting = false;
+
+    async Task Submit()
+    {
+        err = msg = null;
+        if (string.IsNullOrWhiteSpace(userOrEmail)) { err = "Ingrese usuario o correo."; return; }
+
+        try
+        {
+            submitting = true;
+            await Api.ForgotPassword(userOrEmail);
+            msg = "Si existe una cuenta asociada, se enviará un correo con instrucciones.";
+        }
+        catch (Exception ex)
+        {
+            err = ex.Message;
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+}
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">¿Olvidó su contraseña?</h5>
+          @if (!string.IsNullOrEmpty(err)){<div class="alert alert-danger">@err</div>}
+          @if (!string.IsNullOrEmpty(msg)){<div class="alert alert-info">@msg</div>}
+          <div class="mb-3">
+            <label class="form-label">Usuario o correo</label>
+            <input type="text" class="form-control" @bind="userOrEmail" />
+          </div>
+          <button class="btn btn-primary w-100" disabled="@submitting" @onclick="Submit">
+            @(submitting ? "Enviando..." : "Enviar instrucciones")
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

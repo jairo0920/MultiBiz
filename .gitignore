@@ -1,0 +1,166 @@
+# ============================
+#   GITIGNORE para MultiBiz
+#   ASP.NET Core + Blazor + EF Core + Visual Studio 2022
+# ============================
+
+# Archivos de usuario / Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Binarios y objetos de compilación
+bin/
+obj/
+out/
+artifacts/
+Debug/
+Release/
+x64/
+x86/
+[Aa][Rr][Mm]*/
+[Aa][Rr][Mm]64*/
+
+# Archivos de publicación temporales
+publish/
+dist/
+temp/
+tmp/
+
+# Archivos generados por compilador
+*.dll
+*.exe
+*.pdb
+*.mdb
+*.cache
+*.log
+*.dbmdl
+*.bak
+*.tmp
+*.nupkg
+*.nuspec
+*.snupkg
+
+# Archivos de configuración de sistema / paquetes
+*.lock.json
+project.lock.json
+project.fragment.lock.json
+*.projinfo
+
+# Archivos del entorno .NET
+*.metaproj
+*.metaproj.tmp
+*.dotCover
+*.coverage
+*.coveragexml
+*.TestResults.xml
+TestResult*/
+TestResults/
+
+# Archivos de Entity Framework Core
+Migrations/obj/
+Migrations/bin/
+*.db
+*.sqlite
+*.mdf
+*.ldf
+
+# Archivos de Docker
+docker-compose.override.yml
+**/docker-compose.*
+**/Dockerfile.*
+**/docker-compose.yml
+docker-data/
+**/logs/
+**/log/
+**/Log/
+**/Logs/
+*.pid
+
+# Archivos de IDE y herramientas
+.idea/
+*.iml
+*.ipr
+*.iws
+*.ncrunchsolution
+*.ncrunchproject
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*_ReSharper.*
+*.DotSettings.user
+*.sublime-project
+*.sublime-workspace
+
+# Archivos de perfil del usuario
+*.swp
+*~
+*.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Archivos de cache y dependencias locales
+node_modules/
+wwwroot/lib/
+wwwroot/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.ionide/
+.package-lock.json
+pnpm-lock.yaml
+package-lock.json
+
+# Archivos del servidor web / temporal
+/wwwroot/uploads/
+/wwwroot/temp/
+/wwwroot/cache/
+/wwwroot/logs/
+
+# Configuraciones locales
+.env
+.env.*
+.env.local
+*.secret.json
+appsettings.Development.json
+appsettings.Local.json
+
+# Archivos de herramientas CI/CD
+/.github/
+/.gitlab/
+/.cicd/
+/azure-pipelines.yml
+
+# Archivos de SQLite, EF y backups
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+*.bak
+*.sql
+
+# Archivos de informes o exportaciones
+/reports/
+/exports/
+/backups/
+
+# Archivos de ejecución local
+*.pid
+*.seed
+*.json.seed
+/secrets.json
+
+# Archivos de inspección de rendimiento
+BenchmarkDotNet.Artifacts/
+
+# Archivos temporales de Rider y Resharper
+.idea/
+*.DotSettings
+_ReSharper.Caches/
+_ReSharper.*
+
+# ============================
+#   FIN DEL ARCHIVO
+# ============================
