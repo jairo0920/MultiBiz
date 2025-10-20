@@ -1,4 +1,10 @@
-<div class="p-3">
-  <h3>Bienvenido a MultiBiz</h3>
-  <p class="text-muted">Plataforma multi-tenant para restaurante y barbería. Optimizado para pantallas táctiles.</p>
-</div>
+@page "/"
+@inject NavigationManager Nav
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            Nav.NavigateTo("/login", true); // replaceHistory = true
+    }
+}

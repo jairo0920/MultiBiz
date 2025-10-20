@@ -1,37 +1,6 @@
 @inherits LayoutComponentBase
-
-<nav class="navbar navbar-expand-lg" style="background:var(--brand)">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">MultiBiz</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topnav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="topnav">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link text-white" href="/">Inicio</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/admin/tenants">Administración</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/restaurant/kds">Restaurante</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/barbershop/calendar">Barbería</a></li>
-      </ul>
-      <div class="d-flex">
-        <a class="btn btn-sm btn-light me-2" href="/login">Entrar</a>
-        <a class="btn btn-sm btn-outline-light" href="/register">Registrar</a>
-      </div>
-    </div>
-  </div>
-</nav>
-
-<div class="sidebar">
-  <div class="small text-uppercase opacity-75 mb-1">Multi Negocio</div>
-  <a href="/restaurant/kds">KDS Restaurante</a>
-  <a href="/restaurant/ticket">Ticket 80mm</a>
-  <a href="/barbershop/calendar">Calendario Barbería</a>
-  <hr class="border-secondary"/>
-  <div class="small text-uppercase opacity-75 mb-1">Admin</div>
-  <a href="/admin/tenants">Tenants</a>
-  <a href="/admin/users">Usuarios</a>
-</div>
-
-<div class="content">
-  @Body
+<div class="page">
+  <main>
+    @Body
+  </main>
 </div>

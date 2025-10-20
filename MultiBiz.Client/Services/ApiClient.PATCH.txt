@@ -1,9 +1,0 @@
-// Métodos para flujo de recuperación de contraseña
-public Task ForgotPassword(string userOrEmail)
-    => _http.PostAsJsonAsync("api/password/forgot", new { UserNameOrEmail = userOrEmail });
-
-public async Task ResetPassword(string user, string token, string newPass)
-{
-    var res = await _http.PostAsJsonAsync("api/password/reset", new { UserName = user, Token = token, NewPassword = newPass });
-    res.EnsureSuccessStatusCode();
-}

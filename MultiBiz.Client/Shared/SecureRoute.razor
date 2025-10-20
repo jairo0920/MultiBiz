@@ -1,0 +1,27 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Nav
+@attribute [Authorize]
+
+<CascadingAuthenticationState>
+    <AuthorizeView>
+        <Authorized>
+            @ChildContent
+        </Authorized>
+        <NotAuthorized>
+            @* Redirección inmediata si no está autenticado *@
+            @code {
+                protected override void OnAfterRender(bool firstRender)
+                {
+                    if (firstRender)
+                    {
+                        Nav.NavigateTo("/login", true);
+                    }
+                }
+            }
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

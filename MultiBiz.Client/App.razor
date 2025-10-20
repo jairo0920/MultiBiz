@@ -1,10 +1,14 @@
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <LayoutView Layout="@typeof(MainLayout)" RouteData="@routeData" />
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
         <LayoutView Layout="@typeof(MainLayout)">
-            <p class="p-4">Lo sentimos, no se encontró la página.</p>
+            <div class="container py-4">
+                <h5>Página no encontrada</h5>
+                <a class="btn btn-link p-0" href="/login">Ir a login</a>
+            </div>
         </LayoutView>
     </NotFound>
 </Router>
