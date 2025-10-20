@@ -1,89 +1,143 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+using System.Net;
 using System.Net.Http.Json;
-using System.Text;
+using System.Text.Json;
 using MultiBiz.Shared.Abstractions;
 using MultiBiz.Shared.Users;
 using MultiBiz.Shared.Tenants;
-using MultiBiz.Shared.Barbershop;
 using MultiBiz.Shared.Restaurant;
+using MultiBiz.Shared.Barbershop;
 
 namespace MultiBiz.Client.Services
 {
-    /// <summary>
-    /// Extensiones tipadas del ApiClient para que coincidan con las páginas Blazor.
-    /// Deja este archivo junto a tu ApiClient.cs (ambos deben ser 'partial').
-    /// </summary>
-    public partial class ApiClient
+    public static class ApiClientExtensions
     {
-        // ==================== RESTAURANT / KDS ====================
-        public Task<IEnumerable<KdsOrderItem>?> GetKds()
-            => _http.GetFromJsonAsync<IEnumerable<KdsOrderItem>>("api/restaurant/kds");
-
-        // ==================== ADMIN: USERS ====================
-        public Task<PagedResult<UserDto>?> GetUsers(int page = 1, int pageSize = 50, string? q = null)
+        private static async Task<T?> GetWithFallback<T>(this HttpClient http, params string[] paths)
         {
-            var query = Uri.EscapeDataString(q ?? string.Empty);
-            return _http.GetFromJsonAsync<PagedResult<UserDto>>($"api/admin/users?page={page}&pageSize={pageSize}&q={query}");
-        }
-
-        // ==================== ADMIN: TENANTS ====================
-        public Task<PagedResult<TenantDto>?> GetTenants(int page = 1, int pageSize = 50, string? q = null)
-        {
-            var query = Uri.EscapeDataString(q ?? string.Empty);
-            return _http.GetFromJsonAsync<PagedResult<TenantDto>>($"api/admin/tenants?page={page}&pageSize={pageSize}&q={query}");
-        }
-
-        // Overload conveniente si tu UI solo captura el nombre: genera subdominio slug.
-        public Task<TenantDto?> CreateTenant(string name) => CreateTenant(name, Slugify(name), isActive: true);
-
-        public async Task<TenantDto?> CreateTenant(string name, string subdomain, bool isActive = true)
-        {
-            var res = await _http.PostAsJsonAsync("api/admin/tenants", new { Name = name, Subdomain = subdomain, IsActive = isActive });
-            res.EnsureSuccessStatusCode();
-            return await res.Content.ReadFromJsonAsync<TenantDto>();
-        }
-
-        // ==================== BARBERSHOP: CALENDAR ====================
-        public Task<IEnumerable<AppointmentDto>?> GetAppointments(string? from = null, string? to = null)
-        {
-            var q = new List<string>();
-            if (!string.IsNullOrWhiteSpace(from)) q.Add($"from={Uri.EscapeDataString(from)}");
-            if (!string.IsNullOrWhiteSpace(to)) q.Add($"to={Uri.EscapeDataString(to)}");
-            var url = "api/barbershop/appointments" + (q.Count > 0 ? "?" + string.Join("&", q) : "");
-            return _http.GetFromJsonAsync<IEnumerable<AppointmentDto>>(url);
-        }
-
-        // ==================== Helpers ====================
-        private static string Slugify(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-            // Quitar acentos
-            var normalized = input.ToLowerInvariant().Normalize(NormalizationForm.FormD);
-            var sb = new StringBuilder();
-            foreach (var c in normalized)
+            foreach (var p in paths)
             {
-                var uc = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (uc != UnicodeCategory.NonSpacingMark)
+                try
                 {
-                    sb.Append(c);
+                    var resp = await http.GetAsync(p);
+                    if (resp.StatusCode == HttpStatusCode.NotFound)
+                        continue;
+                    resp.EnsureSuccessStatusCode();
+                    return await resp.Content.ReadFromJsonAsync<T>();
+                }
+                catch (HttpRequestException)
+                {
+                    // probar siguiente path
                 }
             }
-            var noAccents = sb.ToString().Normalize(NormalizationForm.FormC);
-            // Reemplazos básicos
-            var slug = new string(noAccents.Select(ch =>
-            {
-                if (char.IsLetterOrDigit(ch)) return ch;
-                if (char.IsWhiteSpace(ch) || ch == '_' || ch == '-' ) return '-';
-                return '\0';
-            }).Where(ch => ch != '\0').ToArray());
+            throw new InvalidOperationException($"No se encontró un endpoint válido para: {string.Join(", ", paths)}");
+        }
 
-            // Colapsar múltiples '-' y recortar
-            while (slug.Contains("--")) slug = slug.Replace("--", "-");
-            slug = slug.Trim('-');
-            return slug;
+        private static async Task<TOut?> PostWithFallback<TIn, TOut>(this HttpClient http, TIn body, params string[] paths)
+        {
+            foreach (var p in paths)
+            {
+                try
+                {
+                    var resp = await http.PostAsJsonAsync(p, body);
+                    if (resp.StatusCode == HttpStatusCode.NotFound)
+                        continue;
+                    resp.EnsureSuccessStatusCode();
+                    return await resp.Content.ReadFromJsonAsync<TOut>();
+                }
+                catch (HttpRequestException)
+                {
+                    // probar siguiente path
+                }
+            }
+            throw new InvalidOperationException($"No se encontró un endpoint válido para: {string.Join(", ", paths)}");
+        }
+
+        // ======== USUARIOS ========
+        public static async Task<PagedResult<UserDto>> GetUsers(this ApiClient api, int page, int pageSize, string? q)
+        {
+            var http = api.Http;
+            q ??= string.Empty;
+            var qs = $"?page={page}&pageSize={pageSize}&q={Uri.EscapeDataString(q)}";
+            return await http.GetWithFallback<PagedResult<UserDto>>(
+                $"/api/admin/users{qs}",
+                $"/api/users{qs}",
+                $"/api/administration/users{qs}"
+            ) ?? new PagedResult<UserDto>(Array.Empty<UserDto>(), page, pageSize, 0);
+        }
+
+        // ======== TENANTS ========
+        public static async Task<PagedResult<TenantDto>> GetTenants(this ApiClient api, int page, int pageSize, string? q)
+        {
+            var http = api.Http;
+            q ??= string.Empty;
+            var qs = $"?page={page}&pageSize={pageSize}&q={Uri.EscapeDataString(q)}";
+            return await http.GetWithFallback<PagedResult<TenantDto>>(
+                $"/api/admin/tenants{qs}",
+                $"/api/tenants{qs}",
+                $"/api/administration/tenants{qs}"
+            ) ?? new PagedResult<TenantDto>(Array.Empty<TenantDto>(), page, pageSize, 0);
+        }
+
+        public static async Task<TenantDto?> CreateTenant(this ApiClient api, CreateTenantRequest req)
+        {
+            var http = api.Http;
+            return await http.PostWithFallback<CreateTenantRequest, TenantDto>(
+                req,
+                "/api/admin/tenants",
+                "/api/tenants",
+                "/api/administration/tenants"
+            );
+        }
+
+        // ======== AUTENTICACIÓN ========
+        public static async Task<JsonElement?> RegisterUser(this ApiClient api, string userName, string password, string name, string email, Guid tenantId)
+        {
+            var http = api.Http;
+            var body = new { userName, password, name, email, tenantId };
+            return await http.PostWithFallback<object, JsonElement>(
+                body,
+                "/api/auth/register",
+                "/api/account/register",
+                "/api/users/register"
+            );
+        }
+
+        public static async Task<JsonElement?> LoginRaw(this ApiClient api, string userName, string password)
+        {
+            var http = api.Http;
+            var body = new { userName, password };
+            return await http.PostWithFallback<object, JsonElement>(
+                body,
+                "/api/auth/login",
+                "/api/account/login",
+                "/api/users/login"
+            );
+        }
+
+        // ======== RESTAURANTE: KDS ========
+        public static async Task<IEnumerable<KdsOrderItem>> GetKds(this ApiClient api, int page = 1, int pageSize = 20, string? q = null)
+        {
+            var http = api.Http;
+            q ??= string.Empty;
+            var qs = $"?page={page}&pageSize={pageSize}&q={Uri.EscapeDataString(q)}";
+            return await http.GetWithFallback<IEnumerable<KdsOrderItem>>(
+                $"/api/restaurant/kds{qs}",
+                $"/api/restaurant/orders/kds{qs}",
+                $"/api/kds{qs}"
+            ) ?? Enumerable.Empty<KdsOrderItem>();
+        }
+
+        // ======== BARBERÍA: Citas ========
+        public static async Task<IEnumerable<AppointmentDto>> GetAppointments(this ApiClient api, DateTime? from = null, DateTime? to = null)
+        {
+            var http = api.Http;
+            var f = (from ?? DateTime.UtcNow.Date).ToString("O");
+            var t = (to ?? DateTime.UtcNow.Date.AddDays(7)).ToString("O");
+            var qs = $"?from={Uri.EscapeDataString(f)}&to={Uri.EscapeDataString(t)}";
+            return await http.GetWithFallback<IEnumerable<AppointmentDto>>(
+                $"/api/barbershop/appointments{qs}",
+                $"/api/appointments{qs}",
+                $"/api/barbershop/calendar{qs}"
+            ) ?? Enumerable.Empty<AppointmentDto>();
         }
     }
 }

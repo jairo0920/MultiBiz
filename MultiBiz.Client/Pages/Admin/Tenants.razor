@@ -1,48 +1,82 @@
 @page "/admin/tenants"
 @inject ApiClient Api
 
-@code {
-    PagedResult<TenantDto>? data;
-    int page = 1; int pageSize = 10;
-    string name=""; string sub=""; bool active=true;
+<SecureRoute>
+    <h4>Tenants</h4>
 
-    protected override async Task OnInitializedAsync() => await Load();
+    <EditForm Model="_newTenant" OnValidSubmit="Create">
+        <DataAnnotationsValidator />
+        <div class="row g-2 mb-3">
+            <div class="col-md-4">
+                <InputText @bind-Value="_newTenantName" class="form-control" placeholder="Nombre" />
+            </div>
+            <div class="col-md-4">
+                <InputText @bind-Value="_newTenantSub" class="form-control" placeholder="Subdominio" />
+            </div>
+            <div class="col-md-2 form-check mt-2">
+                <InputCheckbox @bind-Value="_newTenantActive" class="form-check-input" />
+                <label class="form-check-label">Activo</label>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit">Crear</button>
+            </div>
+        </div>
+    </EditForm>
 
-    async Task Load() => data = await Api.GetTenants(page, pageSize);
-    async Task Create()
+    @if (_loading)
     {
-        await Api.CreateTenant(new CreateTenantRequest(name, sub, active));
-        name=sub=""; active=true;
-        await Load();
+        <p>Cargando...</p>
+    }
+    else
+    {
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Nombre</th>
+                    <th>Subdominio</th>
+                    <th>Activo</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var t in _data.Items)
+            {
+                <tr>
+                    <td>@t.Id</td>
+                    <td>@t.Name</td>
+                    <td>@t.Subdomain</td>
+                    <td>@t.IsActive</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <div>Total: @_data.TotalCount</div>
+    }
+</SecureRoute>
+
+@code {
+    private PagedResult<TenantDto> _data = new(Array.Empty<TenantDto>(), 1, 10, 0);
+    private bool _loading = true;
+
+    private string _newTenantName = "";
+    private string _newTenantSub = "";
+    private bool _newTenantActive = true;
+    private object _newTenant = new(); // dummy para EditForm
+
+    protected override async Task OnInitializedAsync()
+    {
+        _data = await Api.GetTenants(1, 10, "");
+        _loading = false;
+    }
+
+    private async Task Create()
+    {
+        var req = new CreateTenantRequest(_newTenantName, _newTenantSub, _newTenantActive);
+        var created = await Api.CreateTenant(req);
+        _data = await Api.GetTenants(1, 10, "");
+        _newTenantName = "";
+        _newTenantSub = "";
+        _newTenantActive = true;
+        StateHasChanged();
     }
 }
-
-<div class="container-fluid">
-  <div class="d-flex align-items-center mb-3">
-    <h5 class="me-auto">Tenants</h5>
-  </div>
-
-  <div class="card mb-3">
-    <div class="card-body row g-2">
-      <div class="col-md-4"><input class="form-control" placeholder="Nombre" @bind="name"/></div>
-      <div class="col-md-4"><input class="form-control" placeholder="Subdominio" @bind="sub"/></div>
-      <div class="col-md-2 form-check d-flex align-items-center">
-        <input class="form-check-input me-2" type="checkbox" @bind="active"/> Activo
-      </div>
-      <div class="col-md-2"><button class="btn btn-primary w-100" @onclick="Create">Agregar</button></div>
-    </div>
-  </div>
-
-  @if(data is not null){
-    <div class="table-responsive card">
-      <table class="table table-hover mb-0">
-        <thead><tr><th>Nombre</th><th>Subdominio</th><th>Activo</th></tr></thead>
-        <tbody>
-          @foreach (var t in data.Items){
-            <tr><td>@t.Name</td><td>@t.Subdomain</td><td>@(t.IsActive? "Sí":"No")</td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-</div>

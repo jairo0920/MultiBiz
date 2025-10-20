@@ -1,31 +1,86 @@
 @page "/register"
+@layout PublicLayout
 @inject ApiClient Api
+@inject Blazored.LocalStorage.ILocalStorageService Storage
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Nav
+
+<h5 class="mb-3">Crear cuenta</h5>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<EditForm Model="this" OnValidSubmit="Submit">
+    <DataAnnotationsValidator />
+    <div class="mb-2">
+        <label class="form-label">Tenant nombre</label>
+        <InputText @bind-Value="tenantName" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Tenant subdominio</label>
+        <InputText @bind-Value="tenantSub" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Usuario</label>
+        <InputText @bind-Value="userName" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Nombre</label>
+        <InputText @bind-Value="name" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Email</label>
+        <InputText @bind-Value="email" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label class="form-label">Contraseña</label>
+        <InputText @bind-Value="password" type="password" class="form-control" />
+    </div>
+    <button class="btn btn-primary w-100">Registrar</button>
+</EditForm>
 
 @code {
+    string tenantName = "";
+    string tenantSub = "";
     string userName = "";
-    string fullName = "";
+    string name = "";
     string email = "";
     string password = "";
-    string? msg;
-    async Task Submit() {
-        await Api.Register(userName, password, fullName, email);
-        msg = "Registro enviado. Un administrador debe activarle.";
+    string? error;
+
+    async Task Submit()
+    {
+        error = null;
+        try
+        {
+            var req = new CreateTenantRequest(tenantName, tenantSub, true);
+            var t = await Api.CreateTenant(req);
+            if (t is null)
+            {
+                error = "No se pudo crear el tenant.";
+                return;
+            }
+
+            var reg = await Api.Register(userName, password, name, email, t.Id);
+            var loginRes = await Api.Login(userName, password);
+            if (loginRes is System.Text.Json.JsonElement el
+                && el.TryGetProperty("token", out var tok) && !string.IsNullOrWhiteSpace(tok.GetString()))
+            {
+                var token = tok.GetString();
+                await Storage.SetItemAsync("authToken", token);
+                if (AuthProvider is MultiBiz.Client.Services.AuthStateProvider asp)
+                    asp.MarkUserAsAuthenticated(token!);
+                Nav.NavigateTo("/home", true);
+                return;
+            }
+
+            error = "Registro ok, pero no se pudo iniciar sesión automáticamente.";
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
     }
 }
-<div class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-6 col-lg-5">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title mb-3">Registrar usuario</h5>
-          @if(!string.IsNullOrEmpty(msg)){<div class="alert alert-success">@msg</div>}
-          <div class="mb-3"><label class="form-label">Usuario</label><input class="form-control" @bind="userName"/></div>
-          <div class="mb-3"><label class="form-label">Nombre completo</label><input class="form-control" @bind="fullName"/></div>
-          <div class="mb-3"><label class="form-label">Correo</label><input class="form-control" @bind="email"/></div>
-          <div class="mb-3"><label class="form-label">Contraseña</label><input type="password" class="form-control" @bind="password"/></div>
-          <button class="btn btn-primary w-100" @onclick="Submit">Registrar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>

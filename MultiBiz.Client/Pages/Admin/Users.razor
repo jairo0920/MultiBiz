@@ -1,24 +1,45 @@
 @page "/admin/users"
 @inject ApiClient Api
 
+<SecureRoute>
+    <h4>Usuarios</h4>
+
+    @if (_loading)
+    {
+        <p>Cargando...</p>
+    }
+    else
+    {
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var u in _data.Items)
+            {
+                <tr>
+                    <td>@u.Id</td>
+                    <td>@u.UserName</td>
+                    <td>@u.Email</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <div>Total: @_data.TotalCount</div>
+    }
+</SecureRoute>
+
 @code {
-    PagedResult<UserDto>? data;
-    int page = 1; int pageSize = 10;
-    protected override async Task OnInitializedAsync() => await Load();
-    async Task Load() => data = await Api.GetUsers(page, pageSize);
+    private PagedResult<UserDto> _data = new(Array.Empty<UserDto>(), 1, 10, 0);
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _data = await Api.GetUsers(1, 10, "");
+        _loading = false;
+    }
 }
-<div class="container-fluid">
-  <h5 class="mb-3">Usuarios</h5>
-  @if (data is not null) {
-    <div class="table-responsive card">
-      <table class="table table-hover mb-0">
-        <thead><tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Activo</th></tr></thead>
-        <tbody>
-          @foreach (var u in data.Items){
-            <tr><td>@u.UserName</td><td>@u.FullName</td><td>@u.Email</td><td>@(u.IsActive? "Sí":"No")</td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-</div>

@@ -1,44 +1,16 @@
 @using Microsoft.AspNetCore.Components.Authorization
-@inject NavigationManager Nav
 
 <CascadingAuthenticationState>
-    <AuthorizeView>
-        <Authorized>
-            @ChildContent
-        </Authorized>
-        <NotAuthorized>
-            @if (_checking)
-            {
-                <div class="text-muted small p-3">Cargando…</div>
-            }
-            else
-            {
-                <!-- Redirige en OnAfterRender -->
-            }
-        </NotAuthorized>
-    </AuthorizeView>
+  <AuthorizeView>
+    <Authorized>
+      @ChildContent
+    </Authorized>
+    <NotAuthorized>
+      <LoginRedirect />
+    </NotAuthorized>
+  </AuthorizeView>
 </CascadingAuthenticationState>
 
 @code {
-    [CascadingParameter] public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
-    [Parameter] public RenderFragment? ChildContent { get; set; }
-
-    private bool _checking = true;
-    private bool _shouldRedirect;
-
-    protected override async Task OnParametersSetAsync()
-    {
-        var authState = await AuthenticationStateTask;
-        _checking = false;
-        _shouldRedirect = !(authState.User?.Identity?.IsAuthenticated ?? false);
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (!_checking && _shouldRedirect)
-        {
-            _shouldRedirect = false;
-            Nav.NavigateTo("/login", true);
-        }
-    }
+  [Parameter] public RenderFragment? ChildContent { get; set; }
 }

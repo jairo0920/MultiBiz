@@ -1,10 +1,119 @@
 @page "/login"
 @layout PublicLayout
 @using System.Text.Json
-@inject ApiClient Api
+@inject MultiBiz.Client.Services.ApiClient Api
 @inject Blazored.LocalStorage.ILocalStorageService Storage
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Nav
+
+<div class="login-page d-flex align-items-center justify-content-center">
+    <div class="login-card card shadow-lg border-0">
+        <div class="row g-0">
+            <div class="col-12 col-lg-6 p-4 p-lg-5 order-2 order-lg-1">
+                <h3 class="fw-bold mb-1 text-primary">Bienvenido</h3>
+                <p class="text-muted mb-4">Ingrese sus credenciales para continuar</p>
+
+                @if (!string.IsNullOrWhiteSpace(error))
+                {
+                    <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div>@error</div>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Usuario</label>
+                    <input class="form-control form-control-lg" autocomplete="username" @bind="userName" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Contraseña</label>
+                    <input type="password" class="form-control form-control-lg" autocomplete="current-password" @bind="password" />
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <button class="btn btn-link p-0" type="button" @onclick="() => showForgot = true">¿Olvidó su contraseña?</button>
+                    </div>
+                    <a class="small" href="/reset">Tengo un token de reseteo</a>
+                </div>
+
+                <button class="btn btn-primary btn-lg w-100" @onclick="Submit" disabled="@busy">
+                    @if (busy)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Ingresando...</span>
+                    }
+                    else
+                    {
+                        <span>Ingresar</span>
+                    }
+                </button>
+
+                <div class="text-center mt-4">
+                    <span class="text-muted me-1">¿No tiene cuenta?</span>
+                    <a href="/register">Crear cuenta</a>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6 bg-primary text-white p-4 p-lg-5 rounded-top-3 rounded-bottom-0 rounded-lg-end-3 rounded-lg-start-0 order-1 order-lg-2 d-flex flex-column justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="brand-logo rounded-circle bg-white bg-opacity-25 d-inline-flex align-items-center justify-content-center"
+                          style="width:48px;height:48px;">
+                        <i class="bi bi-grid-1x2 fs-4"></i>
+                    </span>
+                    <h5 class="m-0 fw-semibold">MultiBiz</h5>
+                </div>
+                <div>
+                    <h4 class="fw-semibold">Suite Multi-Negocio</h4>
+                    <p class="mb-0 opacity-75">Restaurante, Barbería y más — experiencia táctil, rápida y simple.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Panel “modal” liviano para Forgot Password *@
+    @if (showForgot)
+    {
+        <div class="modal-backdrop-lite" @onclick="CloseForgot"></div>
+        <div class="modal-lite card shadow border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h5 class="card-title m-0">Recuperar contraseña</h5>
+                    <button class="btn-close" @onclick="CloseForgot" aria-label="Cerrar"></button>
+                </div>
+                <p class="text-muted mt-2">Ingrese su correo y le enviaremos instrucciones para restablecer su contraseña.</p>
+
+                @if (!string.IsNullOrWhiteSpace(forgotMessage))
+                {
+                    <div class="alert @forgotAlertClass" role="alert">@forgotMessage</div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Correo electrónico</label>
+                    <input type="email" class="form-control" autocomplete="email" @bind="forgotEmail" />
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" @onclick="SendForgot" disabled="@forgotBusy">
+                        @if (forgotBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>Enviando...</span>
+                        }
+                        else
+                        {
+
+                            <span>Enviar</span>
+                        }
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="CloseForgot">Cancelar</button>
+                </div>
+                <div class="mt-3">
+                    <a href="/reset">Ya tengo un token de reseteo</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     string userName = "";
@@ -12,33 +121,29 @@
     string? error;
     bool busy = false;
 
+    // Forgot Password panel
+    bool showForgot = false;
+    string forgotEmail = "";
+    string? forgotMessage;
+    string forgotAlertClass = "alert-info";
+    bool forgotBusy = false;
+
     async Task Submit()
     {
         error = null;
         busy = true;
-
         try
         {
-            var res = await Api.Login(userName, password);
+            var el = await Api.Login(userName, password);
+            var tokenOk = el.TryGetProperty("token", out var jt) && !string.IsNullOrWhiteSpace(jt.GetString());
+            if (!tokenOk)
+                throw new InvalidOperationException("Respuesta de login sin token.");
 
-            if (res == null)
-                throw new InvalidOperationException("Respuesta vacía del servidor.");
-
-            var json = JsonSerializer.Serialize(res);
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-            var token = root.TryGetProperty("token", out var t) ? t.GetString() : null;
-
-            if (string.IsNullOrWhiteSpace(token))
-                throw new InvalidOperationException("El servidor no devolvió un token válido.");
-
-            await Storage.SetItemAsync("authToken", token);
+            var token = jt.GetString();
+            await Storage.SetItemAsync("authToken", token!);
 
             if (AuthProvider is MultiBiz.Client.Services.AuthStateProvider asp)
-            {
-                asp.MarkUserAsAuthenticated(token);
-                await Task.Yield();
-            }
+                asp.MarkUserAsAuthenticated(token!);
 
             Nav.NavigateTo("/home", true);
         }
@@ -51,40 +156,85 @@
             busy = false;
         }
     }
+
+    void CloseForgot()
+    {
+        showForgot = false;
+        forgotBusy = false;
+        forgotMessage = null;
+        forgotAlertClass = "alert-info";
+        forgotEmail = "";
+    }
+
+    async Task SendForgot()
+    {
+        forgotMessage = null;
+        forgotAlertClass = "alert-info";
+        forgotBusy = true;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(forgotEmail))
+                throw new InvalidOperationException("Debe ingresar un correo válido.");
+
+            var ok = await Api.ForgotPassword(forgotEmail);
+            if (ok)
+            {
+                forgotAlertClass = "alert-success";
+                forgotMessage = "Si el correo existe, se enviaron instrucciones para restablecer la contraseña.";
+            }
+            else
+            {
+                forgotAlertClass = "alert-warning";
+                forgotMessage = "No fue posible procesar la solicitud. Intente nuevamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            forgotAlertClass = "alert-danger";
+            forgotMessage = ex.Message;
+        }
+        finally
+        {
+            forgotBusy = false;
+        }
+    }
 }
 
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-6 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title mb-3 text-center">Iniciar sesión</h5>
+<style>
+    /* Fondo y carta */
+    .login-page {
+        min-height: 100vh;
+        background: radial-gradient(1200px 600px at 10% -10%, rgba(0,123,255,.15), transparent), radial-gradient(1000px 500px at 110% 110%, rgba(32,201,151,.18), transparent), linear-gradient(180deg, #f8f9fb 0%, #f1f3f7 100%);
+        padding: 1.25rem;
+    }
 
-          @if (!string.IsNullOrEmpty(error))
-          {
-              <div class="alert alert-danger">@error</div>
-          }
+    .login-card {
+        max-width: 980px;
+        width: 100%;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
 
-          <div class="mb-3">
-            <label class="form-label">Usuario</label>
-            <input class="form-control" @bind="userName" placeholder="Usuario" />
-          </div>
+    .brand-logo {
+        border: 1px solid rgba(255,255,255,.35);
+    }
 
-          <div class="mb-3">
-            <label class="form-label">Contraseña</label>
-            <input type="password" class="form-control" @bind="password" placeholder="Contraseña" />
-          </div>
+    /* Modal liviano */
+    .modal-backdrop-lite {
+        position: fixed;
+        inset: 0;
+        background: rgba(33,37,41,.45);
+        backdrop-filter: blur(2px);
+        z-index: 1040;
+    }
 
-          <button class="btn btn-primary w-100" @onclick="Submit" disabled="@busy">
-            @(busy ? "Validando..." : "Entrar")
-          </button>
-
-          <div class="d-flex justify-content-between mt-3">
-             <a href="/register">Crear cuenta</a>
-             <a href="/forgot">¿Olvidó su contraseña?</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+    .modal-lite {
+        position: fixed;
+        z-index: 1050;
+        left: 50%;
+        top: 10%;
+        transform: translateX(-50%);
+        width: min(520px, 92vw);
+        border-radius: .75rem;
+    }
+</style>

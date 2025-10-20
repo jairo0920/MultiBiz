@@ -1,29 +1,39 @@
 @page "/barbershop/calendar"
 @inject ApiClient Api
-@code {
-    IEnumerable<MultiBiz.Shared.Barbershop.AppointmentDto>? items;
-    protected override async Task OnInitializedAsync() => items = await Api.GetAppointments();
-}
-<div class="container-fluid">
-  <h5 class="mb-3">Citas (7 días)</h5>
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-striped mb-0">
-        <thead><tr><th>Fecha</th><th>Cliente</th><th>Teléfono</th><th>Barbero</th><th>Servicio</th></tr></thead>
-        <tbody>
-          @if (items != null){
-            @foreach (var a in items){
-              <tr>
-                <td>@a.Start.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                <td>@a.CustomerName</td>
-                <td>@a.CustomerPhone</td>
-                <td>@a.BarberId</td>
-                <td>@a.ServiceId</td>
-              </tr>
+
+<SecureRoute>
+    <h4>Agenda Barbería</h4>
+    @if (_loading)
+    {
+        <p>Cargando...</p>
+    }
+    else
+    {
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var a in _items)
+            {
+                <tr>
+                    <td>@a.Id</td>
+                </tr>
             }
-          }
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+            </tbody>
+        </table>
+    }
+</SecureRoute>
+
+@code {
+    private IEnumerable<AppointmentDto> _items = Enumerable.Empty<AppointmentDto>();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _items = await Api.GetAppointments(DateTime.UtcNow.Date, DateTime.UtcNow.Date.AddDays(7));
+        _loading = false;
+    }
+}
