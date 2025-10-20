@@ -1,38 +1,96 @@
 @page "/login"
+@layout PublicLayout
+@using System.Text.Json
 @inject ApiClient Api
+@inject Blazored.LocalStorage.ILocalStorageService Storage
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Nav
+
 @code {
     string userName = "";
     string password = "";
     string? error;
-    async Task Submit() {
-        try {
-            await Api.Login(userName, password);
-            error = null;
-        } catch (Exception ex){ error = ex.Message; }
+    bool busy = false;
+
+    async Task Submit()
+    {
+        error = null;
+        busy = true;
+
+        try
+        {
+            // Llama al método existente en ApiClient.AuthTenantsExtensions.cs
+            var res = await Api.Login(userName, password);
+
+            if (res == null)
+                throw new InvalidOperationException("Respuesta vacía del servidor.");
+
+            // Convertimos el objeto a JsonElement para leer las propiedades
+            var json = JsonSerializer.Serialize(res);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            var token = root.TryGetProperty("token", out var t) ? t.GetString() : null;
+            var email = root.TryGetProperty("email", out var e) ? e.GetString() : null;
+            var tenantId = root.TryGetProperty("tenantId", out var tn) ? tn.GetString() : null;
+            var name = root.TryGetProperty("userName", out var n) ? n.GetString() : null;
+
+            if (string.IsNullOrWhiteSpace(token))
+                throw new InvalidOperationException("El servidor no devolvió un token válido.");
+
+            // Guardar token en localStorage
+            await Storage.SetItemAsync("authToken", token);
+
+            // Notificar autenticación al proveedor
+            if (AuthProvider is MultiBiz.Client.Services.AuthStateProvider asp)
+                asp.MarkUserAsAuthenticated(token);
+
+            // 👉 Redirigir directo a /home (no a "/")
+            Nav.NavigateTo("/", true);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 }
+
 <div class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-6 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title mb-3">Ingresar</h5>
-          @if(!string.IsNullOrEmpty(error)){<div class="alert alert-danger">@error</div>}
-          <div class="mb-3">
-            <label class="form-label">Usuario</label>
-            <input class="form-control" @bind="userName"/>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Contraseña</label>
-            <input type="password" class="form-control" @bind="password"/>
-          </div>
-          <button class="btn btn-primary w-100" @onclick="Submit">Entrar</button>
-          <div class="d-flex justify-content-between mt-3">
-             <a href="/register">Crear cuenta</a>
-             <a href="/forgot">¿Olvidó su contraseña?</a>
-          </div>
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Ingresar</h5>
+
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger">@error</div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Usuario</label>
+                        <input class="form-control" @bind="userName" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" @bind="password" />
+                    </div>
+
+                    <button class="btn btn-primary w-100" @onclick="Submit" disabled="@busy">
+                        @(busy ? "Ingresando..." : "Entrar")
+                    </button>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="/register">Crear cuenta</a>
+                        <a href="/forgot">¿Olvidó su contraseña?</a>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>

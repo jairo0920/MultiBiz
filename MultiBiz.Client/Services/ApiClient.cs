@@ -21,4 +21,5 @@ public partial class ApiClient
         var res = await _http.PostAsJsonAsync("api/password/reset", new { UserName = user, Token = token, NewPassword = newPass });
         res.EnsureSuccessStatusCode();
     }
+
 }

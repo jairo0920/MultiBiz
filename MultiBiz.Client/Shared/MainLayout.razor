@@ -1,6 +1,136 @@
 @inherits LayoutComponentBase
-<div class="page">
-  <main>
-    @Body
-  </main>
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject Blazored.LocalStorage.ILocalStorageService Storage
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Nav
+
+<div class="layout-root">
+
+    <!-- NAVBAR SUPERIOR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-semibold" href="/">MultiBiz</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" aria-controls="topNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="topNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <!-- Links superiores opcionales -->
+                </ul>
+
+                <div class="d-flex align-items-center gap-3">
+                    @if (!string.IsNullOrWhiteSpace(UserDisplay))
+                    {
+                        <span class="text-white-50 small">@UserDisplay</span>
+                    }
+                    <button class="btn btn-outline-light btn-sm" @onclick="Logout">Cerrar sesión</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- CUERPO + SIDEBAR -->
+    <div class="container-fluid pt-navbar">
+        <div class="row">
+            <!-- SIDEBAR -->
+            <aside class="col-12 col-md-3 col-lg-2 mb-3 mb-md-0">
+                <div class="card shadow-sm">
+                    <div class="list-group list-group-flush">
+
+                        <div class="list-group-item fw-semibold text-uppercase small text-muted">
+                            Administrador
+                        </div>
+                        <NavLink href="/admin/users" class="list-group-item list-group-item-action" ActiveClass="active">Usuarios</NavLink>
+                        <NavLink href="/admin/tenants" class="list-group-item list-group-item-action" ActiveClass="active">Tenants</NavLink>
+                        <NavLink href="/admin/roles" class="list-group-item list-group-item-action" ActiveClass="active">Roles</NavLink>
+                        <NavLink href="/admin/modules" class="list-group-item list-group-item-action" ActiveClass="active">Módulos</NavLink>
+
+                        <div class="list-group-item fw-semibold text-uppercase small text-muted">
+                            Restaurante
+                        </div>
+                        <NavLink href="/restaurant/kds" class="list-group-item list-group-item-action" ActiveClass="active">KDS</NavLink>
+                        <NavLink href="/restaurant/tables" class="list-group-item list-group-item-action" ActiveClass="active">Mesas</NavLink>
+                        <NavLink href="/restaurant/menu" class="list-group-item list-group-item-action" ActiveClass="active">Menú</NavLink>
+                        <NavLink href="/restaurant/orders" class="list-group-item list-group-item-action" ActiveClass="active">Órdenes</NavLink>
+                        <NavLink href="/restaurant/payments" class="list-group-item list-group-item-action" ActiveClass="active">Pagos</NavLink>
+
+                        <div class="list-group-item fw-semibold text-uppercase small text-muted">
+                            Barbería
+                        </div>
+                        <NavLink href="/barbershop/calendar" class="list-group-item list-group-item-action" ActiveClass="active">Calendario</NavLink>
+                        <NavLink href="/barbershop/appointments" class="list-group-item list-group-item-action" ActiveClass="active">Citas</NavLink>
+                        <NavLink href="/barbershop/reports" class="list-group-item list-group-item-action" ActiveClass="active">Reportes</NavLink>
+
+                        <div class="list-group-item fw-semibold text-uppercase small text-muted">
+                            Configuración
+                        </div>
+                        <NavLink href="/settings/email" class="list-group-item list-group-item-action" ActiveClass="active">Correo / SMTP</NavLink>
+                        <NavLink href="/settings/sms" class="list-group-item list-group-item-action" ActiveClass="active">SMS (labsMobile)</NavLink>
+                        <NavLink href="/settings/whatsapp" class="list-group-item list-group-item-action" ActiveClass="active">WhatsApp (Meta)</NavLink>
+                        <NavLink href="/settings/global" class="list-group-item list-group-item-action" ActiveClass="active">Global</NavLink>
+
+                    </div>
+                </div>
+            </aside>
+
+            <!-- CONTENIDO -->
+            <main class="col-12 col-md-9 col-lg-10">
+                @Body
+            </main>
+        </div>
+    </div>
 </div>
+
+@code {
+    string? UserDisplay;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthProvider.GetAuthenticationStateAsync();
+        var user = state.User;
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            var name = user.FindFirst("unique_name")?.Value
+                       ?? user.Identity?.Name
+                       ?? user.FindFirst(ClaimTypes.Name)?.Value
+                       ?? "Usuario";
+            var tenant = user.FindFirst("tenant")?.Value;
+            UserDisplay = string.IsNullOrWhiteSpace(tenant) ? name : $"{name} · {tenant}";
+        }
+    }
+
+    private async Task Logout()
+    {
+        // Borra token y marca deslogueado (sin LogoutAsync)
+        await Storage.RemoveItemAsync("authToken");
+        if (AuthProvider is MultiBiz.Client.Services.AuthStateProvider asp)
+        {
+            // tu provider expone MarkUserAsLoggedOut(); úsalo
+            asp.MarkUserAsLoggedOut();
+        }
+        Nav.NavigateTo("/login", true);
+    }
+}
+
+<style>
+    .pt-navbar {
+        padding-top: 72px;
+    }
+
+    .layout-root {
+        min-height: 100vh;
+        background-color: #f8f9fa;
+    }
+    @@media (min-width: 992px) {
+        aside .list-group-item
+
+    {
+        border-left: 0;
+        border-right: 0;
+    }
+
+    }
+</style>
