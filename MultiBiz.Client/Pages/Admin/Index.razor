@@ -1,0 +1,10 @@
+@page "/admin"
+<SecureRoute>
+  @code {
+    [Inject] NavigationManager Nav { get; set; } = default!;
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender) Nav.NavigateTo("/admin/users", true);
+    }
+  }
+</SecureRoute>

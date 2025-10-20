@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
 @using System.Security.Claims
 @inject Blazored.LocalStorage.ILocalStorageService Storage
 @inject AuthenticationStateProvider AuthProvider
@@ -7,7 +8,7 @@
 
 <div class="layout-root">
 
-    <!-- NAVBAR SUPERIOR -->
+    <!-- NAVBAR SUPERIOR (solo Inicio + módulos principales) -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm">
         <div class="container-fluid">
             <a class="navbar-brand fw-semibold" href="/">MultiBiz</a>
@@ -18,7 +19,11 @@
 
             <div class="collapse navbar-collapse" id="topNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <!-- Links superiores opcionales -->
+                    <NavLink href="/home" class="nav-link" ActiveClass="active">Inicio</NavLink>
+                    <NavLink href="/admin" class="nav-link" ActiveClass="active">Administrador</NavLink>
+                    <NavLink href="/restaurant" class="nav-link" ActiveClass="active">Restaurante</NavLink>
+                    <NavLink href="/barbershop" class="nav-link" ActiveClass="active">Barbería</NavLink>
+                    <NavLink href="/settings" class="nav-link" ActiveClass="active">Configuración</NavLink>
                 </ul>
 
                 <div class="d-flex align-items-center gap-3">
@@ -32,51 +37,63 @@
         </div>
     </nav>
 
-    <!-- CUERPO + SIDEBAR -->
+    <!-- CONTENEDOR CON SIDEBAR DINÁMICO + CONTENIDO -->
     <div class="container-fluid pt-navbar">
         <div class="row">
-            <!-- SIDEBAR -->
+            <!-- SIDEBAR IZQUIERDO (cambia según módulo activo) -->
             <aside class="col-12 col-md-3 col-lg-2 mb-3 mb-md-0">
                 <div class="card shadow-sm">
                     <div class="list-group list-group-flush">
-
-                        <div class="list-group-item fw-semibold text-uppercase small text-muted">
-                            Administrador
-                        </div>
-                        <NavLink href="/admin/users" class="list-group-item list-group-item-action" ActiveClass="active">Usuarios</NavLink>
-                        <NavLink href="/admin/tenants" class="list-group-item list-group-item-action" ActiveClass="active">Tenants</NavLink>
-                        <NavLink href="/admin/roles" class="list-group-item list-group-item-action" ActiveClass="active">Roles</NavLink>
-                        <NavLink href="/admin/modules" class="list-group-item list-group-item-action" ActiveClass="active">Módulos</NavLink>
-
-                        <div class="list-group-item fw-semibold text-uppercase small text-muted">
-                            Restaurante
-                        </div>
-                        <NavLink href="/restaurant/kds" class="list-group-item list-group-item-action" ActiveClass="active">KDS</NavLink>
-                        <NavLink href="/restaurant/tables" class="list-group-item list-group-item-action" ActiveClass="active">Mesas</NavLink>
-                        <NavLink href="/restaurant/menu" class="list-group-item list-group-item-action" ActiveClass="active">Menú</NavLink>
-                        <NavLink href="/restaurant/orders" class="list-group-item list-group-item-action" ActiveClass="active">Órdenes</NavLink>
-                        <NavLink href="/restaurant/payments" class="list-group-item list-group-item-action" ActiveClass="active">Pagos</NavLink>
-
-                        <div class="list-group-item fw-semibold text-uppercase small text-muted">
-                            Barbería
-                        </div>
-                        <NavLink href="/barbershop/calendar" class="list-group-item list-group-item-action" ActiveClass="active">Calendario</NavLink>
-                        <NavLink href="/barbershop/appointments" class="list-group-item list-group-item-action" ActiveClass="active">Citas</NavLink>
-                        <NavLink href="/barbershop/reports" class="list-group-item list-group-item-action" ActiveClass="active">Reportes</NavLink>
-
-                        <div class="list-group-item fw-semibold text-uppercase small text-muted">
-                            Configuración
-                        </div>
-                        <NavLink href="/settings/email" class="list-group-item list-group-item-action" ActiveClass="active">Correo / SMTP</NavLink>
-                        <NavLink href="/settings/sms" class="list-group-item list-group-item-action" ActiveClass="active">SMS (labsMobile)</NavLink>
-                        <NavLink href="/settings/whatsapp" class="list-group-item list-group-item-action" ActiveClass="active">WhatsApp (Meta)</NavLink>
-                        <NavLink href="/settings/global" class="list-group-item list-group-item-action" ActiveClass="active">Global</NavLink>
-
+                        @switch (_module)
+                        {
+                            case Module.Admin:
+                                {
+                                    <div class="list-group-item fw-semibold text-uppercase small text-muted">Administrador</div>
+                                    <NavLink href="/admin/users" class="list-group-item list-group-item-action" ActiveClass="active">Usuarios</NavLink>
+                                    <NavLink href="/admin/tenants" class="list-group-item list-group-item-action" ActiveClass="active">Tenants</NavLink>
+                                    <NavLink href="/admin/roles" class="list-group-item list-group-item-action" ActiveClass="active">Roles</NavLink>
+                                    <NavLink href="/admin/modules" class="list-group-item list-group-item-action" ActiveClass="active">Módulos</NavLink>
+                                    break;
+                                }
+                            case Module.Restaurant:
+                                {
+                                    <div class="list-group-item fw-semibold text-uppercase small text-muted">Restaurante</div>
+                                    <NavLink href="/restaurant/kds" class="list-group-item list-group-item-action" ActiveClass="active">KDS</NavLink>
+                                    <NavLink href="/restaurant/tables" class="list-group-item list-group-item-action" ActiveClass="active">Mesas</NavLink>
+                                    <NavLink href="/restaurant/menu" class="list-group-item list-group-item-action" ActiveClass="active">Menú</NavLink>
+                                    <NavLink href="/restaurant/orders" class="list-group-item list-group-item-action" ActiveClass="active">Órdenes</NavLink>
+                                    <NavLink href="/restaurant/payments" class="list-group-item list-group-item-action" ActiveClass="active">Pagos</NavLink>
+                                    break;
+                                }
+                            case Module.Barbershop:
+                                {
+                                    <div class="list-group-item fw-semibold text-uppercase small text-muted">Barbería</div>
+                                    <NavLink href="/barbershop/calendar" class="list-group-item list-group-item-action" ActiveClass="active">Calendario</NavLink>
+                                    <NavLink href="/barbershop/appointments" class="list-group-item list-group-item-action" ActiveClass="active">Citas</NavLink>
+                                    <NavLink href="/barbershop/reports" class="list-group-item list-group-item-action" ActiveClass="active">Reportes</NavLink>
+                                    break;
+                                }
+                            case Module.Settings:
+                                {
+                                    <div class="list-group-item fw-semibold text-uppercase small text-muted">Configuración</div>
+                                    <NavLink href="/settings/email" class="list-group-item list-group-item-action" ActiveClass="active">Correo / SMTP</NavLink>
+                                    <NavLink href="/settings/sms" class="list-group-item list-group-item-action" ActiveClass="active">SMS (labsMobile)</NavLink>
+                                    <NavLink href="/settings/whatsapp" class="list-group-item list-group-item-action" ActiveClass="active">WhatsApp (Meta)</NavLink>
+                                    <NavLink href="/settings/global" class="list-group-item list-group-item-action" ActiveClass="active">Global</NavLink>
+                                    break;
+                                }
+                            default:
+                                {
+                                    <div class="list-group-item fw-semibold text-uppercase small text-muted">Bienvenido</div>
+                                    <a class="list-group-item list-group-item-action" href="/home">Ir a inicio</a>
+                                    break;
+                                }
+                        }
                     </div>
                 </div>
             </aside>
 
-            <!-- CONTENIDO -->
+            <!-- CONTENIDO DE LAS PÁGINAS -->
             <main class="col-12 col-md-9 col-lg-10">
                 @Body
             </main>
@@ -85,7 +102,14 @@
 </div>
 
 @code {
-    string? UserDisplay;
+    private string? UserDisplay;
+    private Module _module = Module.None;
+
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        _module = ResolveModule(Nav.Uri);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,17 +126,40 @@
         }
     }
 
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _module = ResolveModule(e.Location);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private Module ResolveModule(string? uri)
+    {
+        if (string.IsNullOrWhiteSpace(uri)) return Module.None;
+        var path = new Uri(uri).AbsolutePath.ToLowerInvariant();
+
+        if (path.StartsWith("/admin")) return Module.Admin;
+        if (path.StartsWith("/restaurant")) return Module.Restaurant;
+        if (path.StartsWith("/barbershop")) return Module.Barbershop;
+        if (path.StartsWith("/settings")) return Module.Settings;
+        return Module.None;
+    }
+
     private async Task Logout()
     {
-        // Borra token y marca deslogueado (sin LogoutAsync)
         await Storage.RemoveItemAsync("authToken");
         if (AuthProvider is MultiBiz.Client.Services.AuthStateProvider asp)
         {
-            // tu provider expone MarkUserAsLoggedOut(); úsalo
-            asp.MarkUserAsLoggedOut();
+            asp.MarkUserAsLoggedOut(); // usa tu método actual
         }
         Nav.NavigateTo("/login", true);
     }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+
+    private enum Module { None, Admin, Restaurant, Barbershop, Settings }
 }
 
 <style>

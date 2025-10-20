@@ -1,0 +1,10 @@
+@page "/restaurant"
+<SecureRoute>
+  @code {
+    [Inject] NavigationManager Nav { get; set; } = default!;
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender) Nav.NavigateTo("/restaurant/kds", true);
+    }
+  }
+</SecureRoute>
