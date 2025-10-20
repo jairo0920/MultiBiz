@@ -1,4 +1,4 @@
-@page "/"
+﻿@page "/"
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Nav
@@ -7,8 +7,24 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
+
         var state = await AuthProvider.GetAuthenticationStateAsync();
         var isAuth = state.User.Identity?.IsAuthenticated == true;
-        Nav.NavigateTo(isAuth ? "/home" : "/login", true);
+
+        var uri = new Uri(Nav.Uri);
+        var path = (uri.AbsolutePath ?? string.Empty).TrimEnd('/').ToLowerInvariant();
+
+        // Si NO está autenticado y no estamos ya en /login → ir a login
+        if (!isAuth && path != "/login")
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        // Si SÍ está autenticado y estamos en raíz → ir a /home
+        if (isAuth && (path == "" || path == "/"))
+        {
+            Nav.NavigateTo("/home", true);
+        }
     }
 }
