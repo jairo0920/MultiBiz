@@ -13,7 +13,7 @@
             }
             else
             {
-                <!-- No renderizamos nada, la redirección ocurrirá en OnAfterRenderAsync -->
+                <!-- Redirige en OnAfterRender -->
             }
         </NotAuthorized>
     </AuthorizeView>
@@ -28,7 +28,6 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        // Espera el estado antes de decidir
         var authState = await AuthenticationStateTask;
         _checking = false;
         _shouldRedirect = !(authState.User?.Identity?.IsAuthenticated ?? false);
@@ -36,10 +35,9 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        // Redirigir fuera del árbol de render
         if (!_checking && _shouldRedirect)
         {
-            _shouldRedirect = false; // evitar bucles
+            _shouldRedirect = false;
             Nav.NavigateTo("/login", true);
         }
     }
